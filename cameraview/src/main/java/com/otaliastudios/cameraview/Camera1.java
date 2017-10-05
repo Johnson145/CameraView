@@ -608,9 +608,13 @@ class Camera1 extends CameraController {
                 mMediaRecorder.start();
                 return true;
             } catch (Exception e) {
-                LOG.e("Error while starting MediaRecorder. Swallowing.", e);
+                // TODO undo temporary code changes
+                //LOG.e("Error while starting MediaRecorder. Swallowing.", e);
+                mCameraCallbacks.onError("Error while starting MediaRecorder. Swallowing. mCamera == null: " + (mCamera == null), e);
                 mVideoFile = null;
-                mCamera.lock();
+                if (mCamera != null) {
+                    mCamera.lock();
+                }
                 endVideo();
                 return false;
             }
