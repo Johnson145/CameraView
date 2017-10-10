@@ -703,7 +703,10 @@ class Camera1 extends CameraController {
                                 "Swallowing.", e);
                 mCameraCallbacks.onError(cameraException);
                 mVideoFile = null;
-                mCamera.lock();
+                // TODO why can mCamera be null in the first place?
+                if (mCamera != null) {
+                    mCamera.lock();
+                }
                 endVideo();
                 return false;
             }
