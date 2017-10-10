@@ -3,9 +3,13 @@ package com.otaliastudios.cameraview;
 /**
  * An object of this class describes an error that occurred during the normal runtime of the camera.
  */
-public class CameraException extends RuntimeException {
+public abstract class CameraException extends RuntimeException {
 
-    public CameraException(String message, Throwable cause) {
+    CameraException(String message) {
+        super(message);
+    }
+
+    CameraException(String message, Throwable cause) {
         super(message, cause);
     }
 }
