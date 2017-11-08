@@ -1,5 +1,6 @@
 package com.otaliastudios.cameraview;
 
+import android.graphics.ImageFormat;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -24,7 +25,7 @@ import static android.hardware.Camera.CAMERA_ERROR_UNKNOWN;
 
 
 @SuppressWarnings("deprecation")
-class Camera1 extends CameraController {
+class Camera1 extends CameraController implements Camera.PreviewCallback {
 
     private static final String TAG = Camera1.class.getSimpleName();
     private static final CameraLogger LOG = CameraLogger.create(TAG);
@@ -123,6 +124,11 @@ class Camera1 extends CameraController {
                         invertPreviewSizes ? mPreviewSize.getHeight() : mPreviewSize.getWidth(),
                         invertPreviewSizes ? mPreviewSize.getWidth() : mPreviewSize.getHeight()
                 );
+
+                mCamera.setPreviewCallbackWithBuffer(null); // This clears the buffers
+                mCamera.setPreviewCallbackWithBuffer(this); // Reset
+                mFrameManager.allocate(ImageFormat.getBitsPerPixel(mPreviewFormat), mPreviewSize);
+
                 LOG.i("onSurfaceChanged:", "Restarting preview.");
                 mCamera.startPreview();
                 LOG.i("onSurfaceChanged:", "Restarted preview.");
@@ -157,10 +163,16 @@ class Camera1 extends CameraController {
         );
         synchronized (mLock) {
             Camera.Parameters params = mCamera.getParameters();
+            mPreviewFormat = params.getPreviewFormat();
             params.setPreviewSize(mPreviewSize.getWidth(), mPreviewSize.getHeight()); // <- not allowed during preview
             params.setPictureSize(mCaptureSize.getWidth(), mCaptureSize.getHeight()); // <- allowed
             mCamera.setParameters(params);
         }
+
+        mCamera.setPreviewCallbackWithBuffer(null); // Release anything left
+        mCamera.setPreviewCallbackWithBuffer(this); // Add ourselves
+        mFrameManager.allocate(ImageFormat.getBitsPerPixel(mPreviewFormat), mPreviewSize);
+
         LOG.i("setup:", "Starting preview with startPreview().");
         mCamera.startPreview();
         LOG.i("setup:", "Started preview with startPreview().");
@@ -237,13 +249,17 @@ class Camera1 extends CameraController {
         Exception error = null;
         LOG.i("onStop:", "About to clean up.");
         mHandler.get().removeCallbacks(mPostFocusResetRunnable);
+        mFrameManager.release();
+
         if (mCamera != null) {
+
             LOG.i("onStop:", "Clean up.", "Ending video?", mIsCapturingVideo);
             if (mIsCapturingVideo) endVideo();
 
             try {
                 LOG.i("onStop:", "Clean up.", "Stopping preview.");
                 mCamera.stopPreview();
+                mCamera.setPreviewCallbackWithBuffer(null);
                 LOG.i("onStop:", "Clean up.", "Stopped preview.");
             } catch (Exception e) {
                 LOG.w("onStop:", "Clean up.", "Exception while stopping preview.");
@@ -283,6 +299,12 @@ class Camera1 extends CameraController {
         return false;
     }
 
+    @Override
+    public void onBufferAvailable(byte[] buffer) {
+        if (isCameraAvailable()) {
+            mCamera.addCallbackBuffer(buffer);
+        }
+    }
 
     @Override
     void setSessionType(SessionType sessionType) {
@@ -569,7 +591,6 @@ class Camera1 extends CameraController {
                     // Got to rotate the preview frame, since byte[] data here does not include
                     // EXIF tags automatically set by camera. So either we add EXIF, or we rotate.
                     // Adding EXIF to a byte array, unfortunately, is hard.
-                    Camera.Parameters params = mCamera.getParameters();
                     final int sensorToDevice = computeExifRotation();
                     final int sensorToDisplay = computeSensorToDisplayOffset();
                     final boolean exifFlip = computeExifFlip();
@@ -578,7 +599,7 @@ class Camera1 extends CameraController {
                     final int preHeight = mPreviewSize.getHeight();
                     final int postWidth = flip ? preHeight : preWidth;
                     final int postHeight = flip ? preWidth : preHeight;
-                    final int format = params.getPreviewFormat();
+                    final int format = mPreviewFormat;
                     WorkerHandler.run(new Runnable() {
                         @Override
                         public void run() {
@@ -590,6 +611,12 @@ class Camera1 extends CameraController {
                             mIsCapturingImage = false;
                         }
                     });
+
+                    // It seems that the buffers are already cleared here, so we need to allocate again.
+                    mCamera.setPreviewCallbackWithBuffer(null); // Release anything left
+                    mCamera.setPreviewCallbackWithBuffer(this); // Add ourselves
+                    mFrameManager.allocate(ImageFormat.getBitsPerPixel(mPreviewFormat), mPreviewSize);
+                    mCamera.setPreviewCallbackWithBuffer(Camera1.this);
                 }
             });
             return true;
@@ -599,6 +626,16 @@ class Camera1 extends CameraController {
             mCameraCallbacks.onError(cameraException);
             return false;
         }
+    }
+
+    @Override
+    public void onPreviewFrame(byte[] data, Camera camera) {
+        Frame frame = mFrameManager.getFrame(data,
+                System.currentTimeMillis(),
+                computeExifRotation(),
+                mPreviewSize,
+                mPreviewFormat);
+        mCameraCallbacks.dispatchFrame(frame);
     }
 
     @Override

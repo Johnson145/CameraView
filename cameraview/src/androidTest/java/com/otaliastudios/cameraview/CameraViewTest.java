@@ -3,6 +3,7 @@ package com.otaliastudios.cameraview;
 
 import android.content.Context;
 import android.location.Location;
+import android.support.annotation.NonNull;
 import android.support.test.filters.MediumTest;
 import android.support.test.runner.AndroidJUnit4;
 import android.view.MotionEvent;
@@ -381,6 +382,7 @@ public class CameraViewTest extends BaseTest {
 
     //region testLocation
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testSetLocation() {
         cameraView.setLocation(50d, -50d);
@@ -547,6 +549,68 @@ public class CameraViewTest extends BaseTest {
         assertEquals(cameraView.getVideoQuality(), VideoQuality.MAX_1080P);
         cameraView.setVideoQuality(VideoQuality.LOWEST);
         assertEquals(cameraView.getVideoQuality(), VideoQuality.LOWEST);
+    }
+
+    //endregion
+
+    //region Lists of listeners and processors
+
+    @SuppressWarnings("UseBulkOperation")
+    @Test
+    public void testCameraListenerList() {
+        assertTrue(cameraView.mListeners.isEmpty());
+
+        CameraListener listener = new CameraListener() {};
+        cameraView.addCameraListener(listener);
+        assertEquals(cameraView.mListeners.size(), 1);
+
+        cameraView.removeCameraListener(listener);
+        assertEquals(cameraView.mListeners.size(), 0);
+
+        cameraView.addCameraListener(listener);
+        cameraView.addCameraListener(listener);
+        assertEquals(cameraView.mListeners.size(), 2);
+
+        cameraView.clearCameraListeners();
+        assertTrue(cameraView.mListeners.isEmpty());
+
+        // Ensure this does not throw a ConcurrentModificationException
+        cameraView.addCameraListener(new CameraListener() {});
+        cameraView.addCameraListener(new CameraListener() {});
+        cameraView.addCameraListener(new CameraListener() {});
+        for (CameraListener test : cameraView.mListeners) {
+            cameraView.mListeners.remove(test);
+        }
+    }
+
+    @SuppressWarnings({"NullableProblems", "UseBulkOperation"})
+    @Test
+    public void testFrameProcessorsList() {
+        assertTrue(cameraView.mFrameProcessors.isEmpty());
+
+        FrameProcessor processor = new FrameProcessor() {
+            public void process(@NonNull Frame frame) {}
+        };
+        cameraView.addFrameProcessor(processor);
+        assertEquals(cameraView.mFrameProcessors.size(), 1);
+
+        cameraView.removeFrameProcessor(processor);
+        assertEquals(cameraView.mFrameProcessors.size(), 0);
+
+        cameraView.addFrameProcessor(processor);
+        cameraView.addFrameProcessor(processor);
+        assertEquals(cameraView.mFrameProcessors.size(), 2);
+
+        cameraView.clearFrameProcessors();
+        assertTrue(cameraView.mFrameProcessors.isEmpty());
+
+        // Ensure this does not throw a ConcurrentModificationException
+        cameraView.addFrameProcessor(new FrameProcessor() { public void process(Frame f) {} });
+        cameraView.addFrameProcessor(new FrameProcessor() { public void process(Frame f) {} });
+        cameraView.addFrameProcessor(new FrameProcessor() { public void process(Frame f) {} });
+        for (FrameProcessor test : cameraView.mFrameProcessors) {
+            cameraView.mFrameProcessors.remove(test);
+        }
     }
 
     //endregion

@@ -459,7 +459,7 @@ public class IntegrationTest extends BaseTest {
         Size size = camera.getCaptureSize();
         camera.capturePicture();
         byte[] jpeg = waitForPicture(true);
-        Bitmap b = CameraUtils.decodeBitmap(jpeg);
+        Bitmap b = CameraUtils.decodeBitmap(jpeg, Integer.MAX_VALUE, Integer.MAX_VALUE);
         // Result can actually have swapped dimensions
         // Which one, depends on factors including device physical orientation
         assertTrue(b.getWidth() == size.getHeight() || b.getWidth() == size.getWidth());
@@ -497,11 +497,63 @@ public class IntegrationTest extends BaseTest {
         Size size = camera.getPreviewSize();
         camera.captureSnapshot();
         byte[] jpeg = waitForPicture(true);
-        Bitmap b = CameraUtils.decodeBitmap(jpeg);
+        Bitmap b = CameraUtils.decodeBitmap(jpeg, Integer.MAX_VALUE, Integer.MAX_VALUE);
         // Result can actually have swapped dimensions
         // Which one, depends on factors including device physical orientation
         assertTrue(b.getWidth() == size.getHeight() || b.getWidth() == size.getWidth());
         assertTrue(b.getHeight() == size.getHeight() || b.getHeight() == size.getWidth());
     }
 
+    //endregion
+
+    //region Frame Processing
+
+    private void assert30Frames(FrameProcessor mock) throws Exception {
+        // Expect 30 frames
+        CountDownLatch latch = new CountDownLatch(30);
+        doCountDown(latch).when(mock).process(any(Frame.class));
+        boolean did = latch.await(4, TimeUnit.SECONDS);
+        assertTrue(did);
+    }
+
+    @Test
+    public void testFrameProcessing_simple() throws Exception {
+        FrameProcessor processor = mock(FrameProcessor.class);
+        camera.addFrameProcessor(processor);
+        camera.start();
+        waitForOpen(true);
+
+        assert30Frames(processor);
+    }
+
+    @Test
+    public void testFrameProcessing_afterSnapshot() throws Exception {
+        FrameProcessor processor = mock(FrameProcessor.class);
+        camera.addFrameProcessor(processor);
+        camera.start();
+        waitForOpen(true);
+
+        // In Camera1, snapshots will clear the preview callback
+        // Ensure we restore correctly
+        camera.captureSnapshot();
+        waitForPicture(true);
+
+        assert30Frames(processor);
+    }
+
+    @Test
+    public void testFrameProcessing_afterRestart() throws Exception {
+        FrameProcessor processor = mock(FrameProcessor.class);
+        camera.addFrameProcessor(processor);
+        camera.start();
+        waitForOpen(true);
+        camera.stop();
+        waitForClose(true);
+        camera.start();
+        waitForOpen(true);
+
+        assert30Frames(processor);
+    }
+
+    //endregion
 }
