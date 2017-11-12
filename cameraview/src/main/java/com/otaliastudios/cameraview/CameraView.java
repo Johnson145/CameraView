@@ -36,6 +36,7 @@ import static android.view.View.MeasureSpec.EXACTLY;
 import static android.view.View.MeasureSpec.UNSPECIFIED;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static com.otaliastudios.cameraview.CameraConfigurationFailedException.CONFIGURATION_JPEG_QUALITY;
 
 
 public class CameraView extends FrameLayout {
@@ -1043,7 +1044,7 @@ public class CameraView extends FrameLayout {
             IllegalArgumentException illegalArgumentException = new
                     IllegalArgumentException("JPEG quality should be > 0 and <= 100");
             CameraException cameraException = new CameraConfigurationFailedException("Could not" +
-                    " set JpegQuality", illegalArgumentException);
+                    " set JpegQuality", CONFIGURATION_JPEG_QUALITY, illegalArgumentException);
             mCameraCallbacks.onError(cameraException);
         }
         mJpegQuality = jpegQuality;
@@ -1249,7 +1250,7 @@ public class CameraView extends FrameLayout {
     public void startCapturingVideo(File file, long durationMillis) {
         if (durationMillis < 500) {
             CameraException cameraException = new CapturingVideoFailedException("Video duration" +
-                    " can't be < 500 milliseconds");
+                    " can't be < 500 milliseconds", file);
             mCameraCallbacks.onError(cameraException);
         }
         startCapturingVideo(file);
