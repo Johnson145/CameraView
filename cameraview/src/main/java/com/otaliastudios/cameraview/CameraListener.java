@@ -31,21 +31,17 @@ public abstract class CameraListener {
 
 
     /**
-     * Notifies about an error during the camera setup or configuration.
-     * At the moment, errors that are passed here are unrecoverable. When this is called,
-     * the camera has been released and is presumably showing a black preview.
+     * Notifies that an error occurred in any of the previously called methods.
      *
-     * This is the right moment to show an error dialog to the user.
-     * You can try calling start() again, but that is not guaranteed to work - if it doesn't,
-     * this callback will be invoked again.
+     * The default implementation will just throw the original exception again to prevent missing
+     * error handling. Override this method without calling the super method in order to implement
+     * custom error handling.
      *
-     * In the future, more information will be passed through the {@link CameraException} instance.
-     *
-     * @param exception the error
+     * @param exception the caught exception
      */
     @UiThread
-    public void onCameraError(@NonNull CameraException exception) {
-
+    public void onCameraError(CameraException exception) {
+        throw exception;
     }
 
 
@@ -149,19 +145,5 @@ public abstract class CameraListener {
     @UiThread
     public void onExposureCorrectionChanged(float newValue, float[] bounds, PointF[] fingers) {
 
-    }
-
-    /**
-     * Notifies that an error occurred in any of the previously called methods.
-     *
-     * The default implementation will just throw the original exception again to prevent missing
-     * error handling. Override this method without calling the super method in order to implement
-     * custom error handling.
-     *
-     * @param exception the caught exception
-     */
-    @UiThread
-    public void onError(CameraException exception) {
-        throw exception;
     }
 }

@@ -64,7 +64,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                 // TODO why does it fail occasionally and is it possible to prevent such errors?
                 CameraException cameraException = new CameraConfigurationFailedException("Failed to " +
                         "reset auto focus.", CONFIGURATION_FOCUS, e);
-                mCameraCallbacks.onError(cameraException);
+                mCameraCallbacks.dispatchError(cameraException);
             }
         }
     };
@@ -102,7 +102,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     } catch (Exception e) {
                         CameraException cameraException = new CameraUnavailableException(
                                 "onSurfaceAvailable: Exception while binding camera to preview.", e);
-                        mCameraCallbacks.onError(cameraException);
+                        mCameraCallbacks.dispatchError(cameraException);
                     }
                 }
             }
@@ -324,7 +324,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
         }
 
         // redirect error
-        mCameraCallbacks.onError(cameraException);
+        mCameraCallbacks.dispatchError(cameraException);
     }
 
 
@@ -356,7 +356,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set the location.",
                                     CONFIGURATION_LOCATION, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -398,7 +398,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                         CameraException cameraException =
                                 new CameraConfigurationFailedException("Failed to set the camera facing.",
                                         CONFIGURATION_FACING, e);
-                        mCameraCallbacks.onError(cameraException);
+                        mCameraCallbacks.dispatchError(cameraException);
                     }
                 }
             });
@@ -421,7 +421,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set the white balance.",
                                     CONFIGURATION_WHITE_BALANCE, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -452,7 +452,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set hdr.", CONFIGURATION_HDR,
                                     e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -495,7 +495,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set flash.",
                                     CONFIGURATION_FLASH, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -574,7 +574,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set video quality.",
                                     CONFIGURATION_VIDEO_QUALITY, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -620,7 +620,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                 }
                 catch (Exception e) {
                     CameraException cameraException = new CapturingPictureFailedException("Capturing a picture failed.", e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -683,7 +683,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                 }
                 catch (Exception e) {
                     CameraException cameraException = new CapturingSnapshotFailedException("Capturing a snapshot failed.", e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             } // end run
         });
@@ -736,7 +736,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                         CameraException cameraException =
                                 new CapturingVideoFailedException("Error while starting MediaRecorder. " +
                                         "Swallowing.", videoFile, e);
-                        mCameraCallbacks.onError(cameraException);
+                        mCameraCallbacks.dispatchError(cameraException);
                         mVideoFile = null;
                         mCamera.lock();
                         endVideoImmediately();
@@ -844,7 +844,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                 }
 
                 // redirect error
-                mCameraCallbacks.onError(cameraException);
+                mCameraCallbacks.dispatchError(cameraException);
             }
         });
 
@@ -913,7 +913,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set zoom.",
                                     CONFIGURATION_ZOOM, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -946,7 +946,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     CameraException cameraException =
                             new CameraConfigurationFailedException("Failed to set exposure correction.",
                                     CONFIGURATION_EXPOSURE_CORRECTION, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -1004,7 +1004,7 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                     // TODO why do they fail and is it possible to prevent such errors?
                     CameraException cameraException = new CameraConfigurationFailedException("Failed to " +
                             "start auto focus.", CONFIGURATION_FOCUS, e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });

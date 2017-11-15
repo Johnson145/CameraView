@@ -120,10 +120,10 @@ abstract class CameraController implements
                     throw exception;
                 }
             });
-        } else {
+        } else if (throwable instanceof CameraUnavailableException){
             // At the moment all CameraExceptions are unrecoverable, there was something
             // wrong when starting, stopping, or binding the camera to the preview.
-            final CameraException error = (CameraException) throwable;
+            final CameraUnavailableException error = (CameraUnavailableException) throwable;
             LOG.e("uncaughtException:", "Interrupting thread with state:", ss(), "due to CameraException:", error);
             thread.interrupt();
             mHandler = WorkerHandler.get("CameraViewController");
@@ -136,6 +136,11 @@ abstract class CameraController implements
                     mCameraCallbacks.dispatchError(error);
                 }
             });
+        }
+        else {
+            // redirect non-fatal CameraException to the listener
+            final CameraException error = (CameraException) throwable;
+            mCameraCallbacks.dispatchError(error);
         }
     }
 
@@ -181,7 +186,7 @@ abstract class CameraController implements
                 catch (Exception e) {
                     CameraException cameraException =
                             new CameraUnavailableException("Error while starting the camera engine.", e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -205,7 +210,7 @@ abstract class CameraController implements
                 } catch (Exception e) {
                     CameraException cameraException =
                             new CameraUnavailableException("Error while stopping the camera engine.", e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });
@@ -254,7 +259,7 @@ abstract class CameraController implements
                 } catch (Exception e) {
                     CameraException cameraException =
                             new CameraUnavailableException("Error while restarting the camera engine.", e);
-                    mCameraCallbacks.onError(cameraException);
+                    mCameraCallbacks.dispatchError(cameraException);
                 }
             }
         });

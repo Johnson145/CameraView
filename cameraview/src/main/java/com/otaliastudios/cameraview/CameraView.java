@@ -616,7 +616,7 @@ public class CameraView extends FrameLayout {
                 CameraException cameraException = new CameraUnavailableException("Permission " +
                         "error: When the session type is set to video, the RECORD_AUDIO " +
                         "permission should be added to the app manifest file.");
-                mCameraCallbacks.onError(cameraException);
+                mCameraCallbacks.dispatchError(cameraException);
             } catch (PackageManager.NameNotFoundException e) {
                 // Not possible.
             }
@@ -1049,7 +1049,7 @@ public class CameraView extends FrameLayout {
                     IllegalArgumentException("JPEG quality should be > 0 and <= 100");
             CameraException cameraException = new CameraConfigurationFailedException("Could not" +
                     " set JpegQuality", CONFIGURATION_JPEG_QUALITY, illegalArgumentException);
-            mCameraCallbacks.onError(cameraException);
+            mCameraCallbacks.dispatchError(cameraException);
         }
         mJpegQuality = jpegQuality;
     }
@@ -1249,7 +1249,7 @@ public class CameraView extends FrameLayout {
         if (durationMillis < 500) {
             CameraException cameraException = new CapturingVideoFailedException("Video duration" +
                     " can't be < 500 milliseconds", file);
-            mCameraCallbacks.onError(cameraException);
+            mCameraCallbacks.dispatchError(cameraException);
         }
         startCapturingVideo(file);
         mUiHandler.postDelayed(new Runnable() {
@@ -1384,7 +1384,6 @@ public class CameraView extends FrameLayout {
         void dispatchOnFocusEnd(@Nullable Gesture trigger, boolean success, PointF where);
         void dispatchOnZoomChanged(final float newValue, final PointF[] fingers);
         void dispatchOnExposureCorrectionChanged(float newValue, float[] bounds, PointF[] fingers);
-        void onError(CameraException exception);
         void dispatchFrame(Frame frame);
         void dispatchError(CameraException exception);
     }
@@ -1623,7 +1622,7 @@ public class CameraView extends FrameLayout {
          * @param exception the error cause
          */
         @Override
-        public void onError(final CameraException exception) {
+        public void dispatchError(final CameraException exception) {
             // log
             LOG.e(exception.getMessage(), exception.getCause());
 
@@ -1637,7 +1636,7 @@ public class CameraView extends FrameLayout {
                     int count = 0;
                     for (CameraListener listener : mListeners) {
                         try {
-                            listener.onError(exception);
+                            listener.onCameraError(exception);
                         } catch (CameraException ce) {
                             // if a custom error handler caused a new exception, we throw the new
                             // one instead of the original one
@@ -1675,19 +1674,6 @@ public class CameraView extends FrameLayout {
                     }
                 });
             }
-        }
-
-        @Override
-        public void dispatchError(final CameraException exception) {
-            mLogger.i("dispatchError", exception);
-            mUiHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    for (CameraListener listener : mListeners) {
-                        listener.onCameraError(exception);
-                    }
-                }
-            });
         }
     }
 
