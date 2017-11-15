@@ -37,12 +37,12 @@ class Camera2 extends CameraController {
     }
 
     @Override
-    void onStart() throws Exception {
+    void onStart() {
 
     }
 
     @Override
-    void onStop() throws Exception {
+    void onStop() {
 
     }
 
@@ -57,13 +57,13 @@ class Camera2 extends CameraController {
     }
 
     @Override
-    boolean setZoom(float zoom) {
-        return false;
+    void setZoom(float zoom, PointF[] points, boolean notify) {
+
     }
 
     @Override
-    boolean setExposureCorrection(float EVvalue) {
-        return false;
+    void setExposureCorrection(float EVvalue, float[] bounds, PointF[] points, boolean notify) {
+
     }
 
     @Override
@@ -97,33 +97,28 @@ class Camera2 extends CameraController {
     }
 
     @Override
-    boolean capturePicture() {
-        return false;
+    void capturePicture() {
+
     }
 
     @Override
-    boolean captureSnapshot() {
-        return false;
+    void captureSnapshot() {
+
     }
 
     @Override
-    boolean startVideo(@NonNull File file) {
-        return false;
+    void startVideo(@NonNull File file) {
+
     }
 
     @Override
-    boolean endVideo() {
-        return false;
+    void endVideo() {
+
     }
 
     @Override
-    boolean shouldFlipSizes() {
-        return false;
-    }
+    void startAutoFocus(@Nullable Gesture gesture, PointF point) {
 
-    @Override
-    boolean startAutoFocus(@Nullable Gesture gesture, PointF point) {
-        return false;
     }
 
     @Override

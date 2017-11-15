@@ -14,6 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 import static org.mockito.Mockito.*;
@@ -76,7 +78,7 @@ public class CameraViewTest extends BaseTest {
         assertNull(cameraView.getCameraOptions());
         assertNull(cameraView.getExtraProperties());
         assertNull(cameraView.getPreviewSize());
-        assertNull(cameraView.getCaptureSize());
+        assertNull(cameraView.getPictureSize());
         assertNull(cameraView.getSnapshotSize());
     }
 
@@ -92,10 +94,10 @@ public class CameraViewTest extends BaseTest {
         assertEquals(cameraView.getAudio(), Audio.DEFAULT);
         assertEquals(cameraView.getVideoQuality(), VideoQuality.DEFAULT);
         assertEquals(cameraView.getLocation(), null);
-
-        // Self managed
         assertEquals(cameraView.getExposureCorrection(), 0f, 0f);
         assertEquals(cameraView.getZoom(), 0f, 0f);
+
+        // Self managed
         assertEquals(cameraView.getPlaySounds(), CameraView.DEFAULT_PLAY_SOUNDS);
         assertEquals(cameraView.getCropOutput(), CameraView.DEFAULT_CROP_OUTPUT);
         assertEquals(cameraView.getJpegQuality(), CameraView.DEFAULT_JPEG_QUALITY);
@@ -549,6 +551,15 @@ public class CameraViewTest extends BaseTest {
         assertEquals(cameraView.getVideoQuality(), VideoQuality.MAX_1080P);
         cameraView.setVideoQuality(VideoQuality.LOWEST);
         assertEquals(cameraView.getVideoQuality(), VideoQuality.LOWEST);
+    }
+
+    @Test
+    public void testPictureSizeSelector() {
+        SizeSelector source = SizeSelectors.minHeight(50);
+        cameraView.setPictureSize(source);
+        SizeSelector result = mockController.getPictureSizeSelector();
+        assertNotNull(result);
+        assertEquals(result, source);
     }
 
     //endregion

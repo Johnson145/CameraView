@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
-public class CameraCallbacksTest extends BaseTest {
+public class CameraViewCallbacksTest extends BaseTest {
 
     private CameraView camera;
     private CameraListener listener;
@@ -73,8 +73,7 @@ public class CameraCallbacksTest extends BaseTest {
                 camera.instantiatePreview();
                 camera.addCameraListener(listener);
                 camera.addFrameProcessor(processor);
-                task = new Task<>();
-                task.listen();
+                task = new Task<>(true);
             }
         });
     }
@@ -195,36 +194,24 @@ public class CameraCallbacksTest extends BaseTest {
     }
 
     @Test
-    public void testOrientationCallbacks_deviceOnly() {
+    public void testOrientationCallbacks() {
         completeTask().when(listener).onOrientationChanged(anyInt());
-
-        // Assert not called. Both methods must be called.
-        camera.mCameraCallbacks.onDeviceOrientationChanged(0);
-        assertNull(task.await(200));
-        verify(listener, never()).onOrientationChanged(anyInt());
-    }
-
-    @Test
-    public void testOrientationCallbacks_displayOnly() {
-        completeTask().when(listener).onOrientationChanged(anyInt());
-
-        // Assert not called. Both methods must be called.
-        camera.mCameraCallbacks.onDisplayOffsetChanged(0);
-        assertNull(task.await(200));
-        verify(listener, never()).onOrientationChanged(anyInt());
-    }
-
-    @Test
-    public void testOrientationCallbacks_both() {
-        completeTask().when(listener).onOrientationChanged(anyInt());
-
-        // Assert called.
-        camera.mCameraCallbacks.onDisplayOffsetChanged(0);
         camera.mCameraCallbacks.onDeviceOrientationChanged(90);
         assertNotNull(task.await(200));
         verify(listener, times(1)).onOrientationChanged(anyInt());
     }
 
+    // TODO: test onShutter, here or elsewhere
+
+    @Test
+    public void testCameraError() {
+        CameraException error = new CameraException(new RuntimeException("Error"));
+        completeTask().when(listener).onCameraError(error);
+
+        camera.mCameraCallbacks.dispatchError(error);
+        assertNotNull(task.await(200));
+        verify(listener, times(1)).onCameraError(error);
+    }
 
     @Test
     public void testProcessJpeg() {
@@ -264,8 +251,7 @@ public class CameraCallbacksTest extends BaseTest {
 
     private int[] testProcessImage(boolean jpeg, boolean crop, int[] viewDim, int[] imageDim) {
         // End our task when onPictureTaken is called. Take note of the result.
-        final Task<byte[]> jpegTask = new Task<>();
-        jpegTask.listen();
+        final Task<byte[]> jpegTask = new Task<>(true);
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
