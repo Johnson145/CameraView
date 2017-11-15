@@ -1,6 +1,7 @@
 package com.otaliastudios.cameraview;
 
 import android.graphics.PointF;
+import android.support.annotation.NonNull;
 import android.support.annotation.UiThread;
 
 import java.io.File;
@@ -26,6 +27,21 @@ public abstract class CameraListener {
     @UiThread
     public void onCameraClosed() {
 
+    }
+
+
+    /**
+     * Notifies that an error occurred in any of the previously called methods.
+     *
+     * The default implementation will just throw the original exception again to prevent missing
+     * error handling. Override this method without calling the super method in order to implement
+     * custom error handling.
+     *
+     * @param exception the caught exception
+     */
+    @UiThread
+    public void onCameraError(CameraException exception) {
+        throw exception;
     }
 
 
@@ -78,8 +94,8 @@ public abstract class CameraListener {
 
     /**
      * Notifies that user interacted with the screen and started focus with a gesture,
-     * and the autofocus is trying to focus around that area.
-     * This can be used to draw things on screen.
+     * and the autofocus is trying to focus around that area. This can be used to draw things on screen.
+     * Can also be triggered by {@link CameraView#startAutoFocus(float, float)}.
      *
      * @param point coordinates with respect to CameraView.getWidth() and CameraView.getHeight()
      */
@@ -93,6 +109,7 @@ public abstract class CameraListener {
      * Notifies that a gesture focus event just ended, and the camera converged
      * to a new focus (and possibly exposure and white balance).
      * This might succeed or not.
+     * Can also be triggered by {@link CameraView#startAutoFocus(float, float)}.
      *
      * @param successful whether camera succeeded
      * @param point coordinates with respect to CameraView.getWidth() and CameraView.getHeight()
@@ -128,19 +145,5 @@ public abstract class CameraListener {
     @UiThread
     public void onExposureCorrectionChanged(float newValue, float[] bounds, PointF[] fingers) {
 
-    }
-
-    /**
-     * Notifies that an error occurred in any of the previously called methods.
-     *
-     * The default implementation will just throw the original exception again to prevent missing
-     * error handling. Override this method without calling the super method in order to implement
-     * custom error handling.
-     *
-     * @param exception the caught exception
-     */
-    @UiThread
-    public void onError(CameraException exception) {
-        throw exception;
     }
 }

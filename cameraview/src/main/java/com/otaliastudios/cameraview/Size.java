@@ -2,6 +2,9 @@ package com.otaliastudios.cameraview;
 
 import android.support.annotation.NonNull;
 
+/**
+ * A simple class representing a size, with width and height values.
+ */
 public class Size implements Comparable<Size> {
 
     private final int mWidth;
@@ -18,6 +21,11 @@ public class Size implements Comparable<Size> {
 
     public int getHeight() {
         return mHeight;
+    }
+
+    @SuppressWarnings("SuspiciousNameCombination")
+    Size flip() {
+        return new Size(mHeight, mWidth);
     }
 
     @Override

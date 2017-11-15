@@ -53,8 +53,6 @@ public class CameraView extends FrameLayout {
     // Self managed parameters
     private int mJpegQuality;
     private boolean mCropOutput;
-    private float mZoomValue;
-    private float mExposureCorrectionValue;
     private boolean mPlaySounds;
     private HashMap<Gesture, GestureAction> mGestureMap = new HashMap<>(4);
 
@@ -128,6 +126,36 @@ public class CameraView extends FrameLayout {
             Hdr hdr = Hdr.fromValue(a.getInteger(R.styleable.CameraView_cameraHdr, Hdr.DEFAULT.value()));
             Audio audio = Audio.fromValue(a.getInteger(R.styleable.CameraView_cameraAudio, Audio.DEFAULT.value()));
 
+            // Size selectors
+            List<SizeSelector> constraints = new ArrayList<>(3);
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeMinWidth)) {
+                constraints.add(SizeSelectors.minWidth(a.getInteger(R.styleable.CameraView_cameraPictureSizeMinWidth, 0)));
+            }
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeMaxWidth)) {
+                constraints.add(SizeSelectors.maxWidth(a.getInteger(R.styleable.CameraView_cameraPictureSizeMaxWidth, 0)));
+            }
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeMinHeight)) {
+                constraints.add(SizeSelectors.minHeight(a.getInteger(R.styleable.CameraView_cameraPictureSizeMinHeight, 0)));
+            }
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeMaxHeight)) {
+                constraints.add(SizeSelectors.maxHeight(a.getInteger(R.styleable.CameraView_cameraPictureSizeMaxHeight, 0)));
+            }
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeMinArea)) {
+                constraints.add(SizeSelectors.minArea(a.getInteger(R.styleable.CameraView_cameraPictureSizeMinArea, 0)));
+            }
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeMaxArea)) {
+                constraints.add(SizeSelectors.maxArea(a.getInteger(R.styleable.CameraView_cameraPictureSizeMaxArea, 0)));
+            }
+            if (a.hasValue(R.styleable.CameraView_cameraPictureSizeAspectRatio)) {
+                //noinspection ConstantConditions
+                constraints.add(SizeSelectors.aspectRatio(AspectRatio.parse(a.getString(R.styleable.CameraView_cameraPictureSizeAspectRatio)), 0));
+            }
+            if (a.getBoolean(R.styleable.CameraView_cameraPictureSizeSmallest, false)) constraints.add(SizeSelectors.smallest());
+            if (a.getBoolean(R.styleable.CameraView_cameraPictureSizeBiggest, false)) constraints.add(SizeSelectors.biggest());
+            SizeSelector selector = !constraints.isEmpty() ?
+                    SizeSelectors.and(constraints.toArray(new SizeSelector[constraints.size()])) :
+                    SizeSelectors.biggest();
+
             // Gestures
             GestureAction tapGesture = GestureAction.fromValue(a.getInteger(R.styleable.CameraView_cameraGestureTap, GestureAction.DEFAULT_TAP.value()));
             GestureAction longTapGesture = GestureAction.fromValue(a.getInteger(R.styleable.CameraView_cameraGestureLongTap, GestureAction.DEFAULT_LONG_TAP.value()));
@@ -167,10 +195,11 @@ public class CameraView extends FrameLayout {
             setGrid(grid);
             setHdr(hdr);
             setAudio(audio);
+            setPictureSize(selector);
 
             // Apply gestures
             mapGesture(Gesture.TAP, tapGesture);
-            // mapGesture(Gesture.DOUBLE_TAP, doubleTapGesture);
+
             mapGesture(Gesture.LONG_TAP, longTapGesture);
             mapGesture(Gesture.PINCH, pinchGesture);
             mapGesture(Gesture.SCROLL_HORIZONTAL, scrollHorizontalGesture);
@@ -475,7 +504,7 @@ public class CameraView extends FrameLayout {
     // Some gesture layout detected a gesture. It's not known at this moment:
     // (1) if it was mapped to some action (we check here)
     // (2) if it's supported by the camera (CameraController checks)
-    private boolean onGesture(GestureLayout source, @NonNull CameraOptions options) {
+    private void onGesture(GestureLayout source, @NonNull CameraOptions options) {
         Gesture gesture = source.getGestureType();
         GestureAction action = mGestureMap.get(gesture);
         PointF[] points = source.getPoints();
@@ -483,36 +512,29 @@ public class CameraView extends FrameLayout {
         switch (action) {
 
             case CAPTURE:
-                return mCameraController.capturePicture();
+                mCameraController.capturePicture();
+                break;
 
             case FOCUS:
             case FOCUS_WITH_MARKER:
-                return mCameraController.startAutoFocus(gesture, points[0]);
+                mCameraController.startAutoFocus(gesture, points[0]);
+                break;
 
             case ZOOM:
-                oldValue = mZoomValue;
+                oldValue = mCameraController.getZoomValue();
                 newValue = source.scaleValue(oldValue, 0, 1);
-                if (mCameraController.setZoom(newValue)) {
-                    mZoomValue = newValue;
-                    mCameraCallbacks.dispatchOnZoomChanged(newValue, points);
-                    return true;
-                }
+                mCameraController.setZoom(newValue, points, true);
                 break;
 
             case EXPOSURE_CORRECTION:
-                oldValue = mExposureCorrectionValue;
+                oldValue = mCameraController.getExposureCorrectionValue();
                 float minValue = options.getExposureCorrectionMinValue();
                 float maxValue = options.getExposureCorrectionMaxValue();
                 newValue = source.scaleValue(oldValue, minValue, maxValue);
                 float[] bounds = new float[]{minValue, maxValue};
-                if (mCameraController.setExposureCorrection(newValue)) {
-                    mExposureCorrectionValue = newValue;
-                    mCameraCallbacks.dispatchOnExposureCorrectionChanged(newValue, bounds, points);
-                    return true;
-                }
+                mCameraController.setExposureCorrection(newValue, bounds, points, true);
                 break;
         }
-        return false;
     }
 
     //endregion
@@ -542,6 +564,7 @@ public class CameraView extends FrameLayout {
         if (checkPermissions(getSessionType(), getAudio())) {
             // Update display orientation for current CameraController
             mOrientationHelper.enable(getContext());
+            mCameraController.setDisplayOffset(mOrientationHelper.getDisplayOffset());
             mCameraController.start();
         }
     }
@@ -550,8 +573,8 @@ public class CameraView extends FrameLayout {
     /**
      * Checks that we have appropriate permissions for this session type.
      * Throws if session = audio and manifest did not add the microphone permissions.     
-     * @param sessionType
-     * @param audio
+     * @param sessionType the sessionType to be checked
+     * @param audio the audio setting to be checked
      * @return true if we can go on, false otherwise.
      */
     @SuppressLint("NewApi")
@@ -593,7 +616,7 @@ public class CameraView extends FrameLayout {
                 CameraException cameraException = new CameraUnavailableException("Permission " +
                         "error: When the session type is set to video, the RECORD_AUDIO " +
                         "permission should be added to the app manifest file.");
-                mCameraCallbacks.onError(cameraException);
+                mCameraCallbacks.dispatchError(cameraException);
             } catch (PackageManager.NameNotFoundException e) {
                 // Not possible.
             }
@@ -617,7 +640,7 @@ public class CameraView extends FrameLayout {
     public void destroy() {
         clearCameraListeners();
         clearFrameProcessors();
-        mCameraController.stopImmediately();
+        mCameraController.destroy();
     }
 
     //endregion
@@ -668,9 +691,7 @@ public class CameraView extends FrameLayout {
             float max = options.getExposureCorrectionMaxValue();
             if (EVvalue < min) EVvalue = min;
             if (EVvalue > max) EVvalue = max;
-            if (mCameraController.setExposureCorrection(EVvalue)) {
-                mExposureCorrectionValue = EVvalue;
-            }
+            mCameraController.setExposureCorrection(EVvalue, null, null, false);
         }
     }
 
@@ -681,7 +702,7 @@ public class CameraView extends FrameLayout {
      * @return the current exposure correction value
      */
     public float getExposureCorrection() {
-        return mExposureCorrectionValue;
+        return mCameraController.getExposureCorrectionValue();
     }
 
 
@@ -698,9 +719,7 @@ public class CameraView extends FrameLayout {
     public void setZoom(float zoom) {
         if (zoom < 0) zoom = 0;
         if (zoom > 1) zoom = 1;
-        if (mCameraController.setZoom(zoom)) {
-            mZoomValue = zoom;
-        }
+        mCameraController.setZoom(zoom, null, false);
     }
 
 
@@ -709,7 +728,7 @@ public class CameraView extends FrameLayout {
      * @return the current zoom value
      */
     public float getZoom() {
-        return mZoomValue;
+        return mCameraController.getZoomValue();
     }
 
 
@@ -889,33 +908,6 @@ public class CameraView extends FrameLayout {
 
 
     /**
-     * Toggles the flash mode between {@link Flash#OFF},
-     * {@link Flash#ON} and {@link Flash#AUTO}, in this order.
-     *
-     * @return the new flash value
-     */
-    public Flash toggleFlash() {
-        Flash flash = mCameraController.getFlash();
-        switch (flash) {
-            case OFF:
-                setFlash(Flash.ON);
-                break;
-
-            case ON:
-                setFlash(Flash.AUTO);
-                break;
-
-            case AUTO:
-            case TORCH:
-                setFlash(Flash.OFF);
-                break;
-        }
-
-        return mCameraController.getFlash();
-    }
-
-
-    /**
      * Controls the audio mode.
      *
      * @see Audio#OFF
@@ -1007,6 +999,18 @@ public class CameraView extends FrameLayout {
 
 
     /**
+     * Sets picture capture size. The {@link SizeSelector} will be invoked with the list of available
+     * size, and the first acceptable size will be accepted and passed to the internal engine.
+     * See the {@link SizeSelectors} class for handy utilities for creating selectors.
+     *
+     * @param selector a size selector
+     */
+    public void setPictureSize(@NonNull SizeSelector selector) {
+        mCameraController.setPictureSizeSelector(selector);
+    }
+
+
+    /**
      * Sets video recording quality. This is not guaranteed to be supported by current device.
      * If it's not, a lower quality will be chosen, until a supported one is found.
      * If sessionType is video, this might trigger a camera restart and a change in preview size.
@@ -1045,7 +1049,7 @@ public class CameraView extends FrameLayout {
                     IllegalArgumentException("JPEG quality should be > 0 and <= 100");
             CameraException cameraException = new CameraConfigurationFailedException("Could not" +
                     " set JpegQuality", CONFIGURATION_JPEG_QUALITY, illegalArgumentException);
-            mCameraCallbacks.onError(cameraException);
+            mCameraCallbacks.dispatchError(cameraException);
         }
         mJpegQuality = jpegQuality;
     }
@@ -1178,9 +1182,7 @@ public class CameraView extends FrameLayout {
      * @see #captureSnapshot()
      */
     public void capturePicture() {
-        if (mCameraController.capturePicture() && mPlaySounds) {
-            // TODO: playSound on Camera2
-        }
+        mCameraController.capturePicture();
     }
 
 
@@ -1195,10 +1197,7 @@ public class CameraView extends FrameLayout {
      * @see #capturePicture()
      */
     public void captureSnapshot() {
-        if (mCameraController.captureSnapshot() && mPlaySounds) {
-            //noinspection all
-            playSound(MediaActionSound.SHUTTER_CLICK);
-        }
+        mCameraController.captureSnapshot();
     }
 
 
@@ -1225,15 +1224,14 @@ public class CameraView extends FrameLayout {
         if (file == null) {
             file = new File(getContext().getFilesDir(), "video.mp4");
         }
-        if (mCameraController.startVideo(file)) {
-            mUiHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mKeepScreenOn = getKeepScreenOn();
-                    if (!mKeepScreenOn) setKeepScreenOn(true);
-                }
-            });
-        }
+        mCameraController.startVideo(file);
+        mUiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mKeepScreenOn = getKeepScreenOn();
+                if (!mKeepScreenOn) setKeepScreenOn(true);
+            }
+        });
     }
 
 
@@ -1251,7 +1249,7 @@ public class CameraView extends FrameLayout {
         if (durationMillis < 500) {
             CameraException cameraException = new CapturingVideoFailedException("Video duration" +
                     " can't be < 500 milliseconds", file);
-            mCameraCallbacks.onError(cameraException);
+            mCameraCallbacks.dispatchError(cameraException);
         }
         startCapturingVideo(file);
         mUiHandler.postDelayed(new Runnable() {
@@ -1271,14 +1269,13 @@ public class CameraView extends FrameLayout {
      * This will fire {@link CameraListener#onVideoTaken(File)}.
      */
     public void stopCapturingVideo() {
-        if (mCameraController.endVideo()) {
-            mUiHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (getKeepScreenOn() != mKeepScreenOn) setKeepScreenOn(mKeepScreenOn);
-                }
-            });
-        }
+        mCameraController.endVideo();
+        mUiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (getKeepScreenOn() != mKeepScreenOn) setKeepScreenOn(mKeepScreenOn);
+            }
+        });
     }
 
 
@@ -1299,8 +1296,8 @@ public class CameraView extends FrameLayout {
      * @return a Size
      */
     @Nullable
-    public Size getCaptureSize() {
-        return mCameraController != null ? mCameraController.getCaptureSize() : null;
+    public Size getPictureSize() {
+        return mCameraController != null ? mCameraController.getPictureSize() : null;
     }
 
 
@@ -1375,10 +1372,11 @@ public class CameraView extends FrameLayout {
 
     //region Callbacks and dispatching
 
-    interface CameraCallbacks extends OrientationHelper.Callbacks {
+    interface CameraCallbacks extends OrientationHelper.Callback {
         void dispatchOnCameraOpened(CameraOptions options);
         void dispatchOnCameraClosed();
         void onCameraPreviewSizeChanged();
+        void onShutter(boolean shouldPlaySound);
         void processImage(byte[] jpeg, boolean consistentWithView, boolean flipHorizontally);
         void processSnapshot(YuvImage image, boolean consistentWithView, boolean flipHorizontally);
         void dispatchOnVideoTaken(File file);
@@ -1386,18 +1384,13 @@ public class CameraView extends FrameLayout {
         void dispatchOnFocusEnd(@Nullable Gesture trigger, boolean success, PointF where);
         void dispatchOnZoomChanged(final float newValue, final PointF[] fingers);
         void dispatchOnExposureCorrectionChanged(float newValue, float[] bounds, PointF[] fingers);
-        void onError(CameraException exception);
         void dispatchFrame(Frame frame);
+        void dispatchError(CameraException exception);
     }
 
     private class Callbacks implements CameraCallbacks {
 
-        // Outer listeners
         private CameraLogger mLogger = CameraLogger.create(CameraCallbacks.class.getSimpleName());
-
-        // Orientation TODO: move this logic into OrientationHelper
-        private Integer mDisplayOffset;
-        private Integer mDeviceOrientation;
 
         Callbacks() {}
 
@@ -1442,6 +1435,13 @@ public class CameraView extends FrameLayout {
             });
         }
 
+        @Override
+        public void onShutter(boolean shouldPlaySound) {
+            if (shouldPlaySound && mPlaySounds) {
+                //noinspection all
+                playSound(MediaActionSound.SHUTTER_CLICK);
+            }
+        }
 
         /**
          * What would be great here is to ensure the EXIF tag in the jpeg is consistent with what we expect,
@@ -1505,7 +1505,6 @@ public class CameraView extends FrameLayout {
                 }
             });
         }
-
 
         private void dispatchOnPictureTaken(byte[] jpeg) {
             mLogger.i("dispatchOnPictureTaken");
@@ -1574,30 +1573,11 @@ public class CameraView extends FrameLayout {
         }
 
         @Override
-        public void onDisplayOffsetChanged(int displayOffset) {
-            mLogger.i("onDisplayOffsetChanged", displayOffset);
-            mCameraController.onDisplayOffset(displayOffset);
-            mDisplayOffset = displayOffset;
-            if (mDeviceOrientation != null) {
-                int value = (mDeviceOrientation + mDisplayOffset) % 360;
-                dispatchOnOrientationChanged(value);
-            }
-        }
-
-        @Override
         public void onDeviceOrientationChanged(int deviceOrientation) {
             mLogger.i("onDeviceOrientationChanged", deviceOrientation);
-            mCameraController.onDeviceOrientation(deviceOrientation);
-            mDeviceOrientation = deviceOrientation;
-            if (mDisplayOffset != null) {
-                int value = (mDeviceOrientation + mDisplayOffset) % 360;
-                dispatchOnOrientationChanged(value);
-            }
-        }
-
-
-        private void dispatchOnOrientationChanged(final int value) {
-            mLogger.i("dispatchOnOrientationChanged", value);
+            mCameraController.setDeviceOrientation(deviceOrientation);
+            int displayOffset = mOrientationHelper.getDisplayOffset();
+            final int value = (deviceOrientation + displayOffset) % 360;
             mUiHandler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -1642,7 +1622,7 @@ public class CameraView extends FrameLayout {
          * @param exception the error cause
          */
         @Override
-        public void onError(final CameraException exception) {
+        public void dispatchError(final CameraException exception) {
             // log
             LOG.e(exception.getMessage(), exception.getCause());
 
@@ -1656,7 +1636,7 @@ public class CameraView extends FrameLayout {
                     int count = 0;
                     for (CameraListener listener : mListeners) {
                         try {
-                            listener.onError(exception);
+                            listener.onCameraError(exception);
                         } catch (CameraException ce) {
                             // if a custom error handler caused a new exception, we throw the new
                             // one instead of the original one
@@ -1699,7 +1679,36 @@ public class CameraView extends FrameLayout {
 
     //endregion
 
-    //region Deprecated
+    //region deprecated APIs
+
+    /**
+     * @deprecated use {@link #getPictureSize()} instead.
+     */
+    @Deprecated
+    @Nullable
+    public Size getCaptureSize() {
+        return getPictureSize();
+    }
+
+    /**
+     * Toggles the flash mode between {@link Flash#OFF},
+     * {@link Flash#ON} and {@link Flash#AUTO}, in this order.
+     *
+     * @deprecated Don't use this. Flash values might not be supported,
+     *             and the return value is unreliable.
+     *
+     * @return the new flash value
+     */
+    @Deprecated
+    public Flash toggleFlash() {
+        Flash flash = mCameraController.getFlash();
+        switch (flash) {
+            case OFF: setFlash(Flash.ON); break;
+            case ON: setFlash(Flash.AUTO); break;
+            case AUTO: case TORCH: setFlash(Flash.OFF); break;
+        }
+        return mCameraController.getFlash();
+    }
 
     //endregion
 }
