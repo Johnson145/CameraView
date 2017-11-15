@@ -36,6 +36,7 @@ android {
         main.java.srcDirs += 'src/main/views'
         main.java.srcDirs += 'src/main/utils'
     }
+    buildToolsVersion '26.0.2'
 }
 
 dependencies {
