@@ -848,10 +848,18 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
             }
         });
 
+        // TODO setMaxDuration
+        mMediaRecorder.setMaxDuration(5000);
         mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
             @Override
             public void onInfo(MediaRecorder mediaRecorder, int what, int extra) {
-                LOG.i("MediaRecorder info code: " + what + ". Extra code: " + extra + ".");
+                if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+                    LOG.i("MediaRecorder: max duration reached. Extra code: " + extra + ".");
+                    endVideoImmediately();
+                }
+                else {
+                    LOG.i("MediaRecorder info code: " + what + ". Extra code: " + extra + ".");
+                }
             }
         });
 
