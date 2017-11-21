@@ -186,7 +186,7 @@ abstract class CameraController implements
                 catch (Exception e) {
                     CameraException cameraException =
                             new CameraUnavailableException("Error while starting the camera engine.", e);
-                    mCameraCallbacks.dispatchError(cameraException);
+                    throw cameraException;
                 }
             }
         });
@@ -210,7 +210,7 @@ abstract class CameraController implements
                 } catch (Exception e) {
                     CameraException cameraException =
                             new CameraUnavailableException("Error while stopping the camera engine.", e);
-                    mCameraCallbacks.dispatchError(cameraException);
+                    throw cameraException;
                 }
             }
         });
@@ -259,7 +259,7 @@ abstract class CameraController implements
                 } catch (Exception e) {
                     CameraException cameraException =
                             new CameraUnavailableException("Error while restarting the camera engine.", e);
-                    mCameraCallbacks.dispatchError(cameraException);
+                    throw cameraException;
                 }
             }
         });
