@@ -1631,27 +1631,33 @@ public class CameraView extends FrameLayout {
                 @Override
                 public void run() {
 
-                    // all error listeners will be called, but at most one of them should actually
-                    // throw an exception
-                    int count = 0;
-                    for (CameraListener listener : mListeners) {
-                        try {
-                            listener.onCameraError(exception);
-                        } catch (CameraException ce) {
-                            // if a custom error handler caused a new exception, we throw the new
-                            // one instead of the original one
-                            if (ce == exception) {
-                                count++;
-                            }
-                            else {
-                                throw ce;
+                    if (!mListeners.isEmpty()) {
+
+                        // all error listeners will be called
+                        int count = 0;
+                        for (CameraListener listener : mListeners) {
+                            try {
+                                listener.onCameraError(exception);
+                            } catch (CameraException ce) {
+                                // if a custom error handler caused a new exception, we throw the new
+                                // one instead of the original one
+                                if (ce == exception) {
+                                    count++;
+                                } else {
+                                    throw ce;
+                                }
                             }
                         }
-                    }
 
-                    // the original exception is only thrown, if all existing listeners threw it
-                    if (count == mListeners.size()) {
-                        throw exception;
+                        // the original exception is only thrown, if all existing listeners threw it
+                        if (count == mListeners.size()) {
+                            throw exception;
+                        }
+                    }
+                    else {
+                        // we won't throw the exception here, because we will get here after an activity was destroyed
+                        // and thereby removed its listeners. we don't let a destroyed MainActivity crash the app though.
+                        LOG.e("Suppressed exception, because no camera error listener is available: " + exception.getMessage());
                     }
                 }
             });
