@@ -848,8 +848,6 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
             }
         });
 
-        // TODO setMaxDuration
-        mMediaRecorder.setMaxDuration(5000);
         mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
             @Override
             public void onInfo(MediaRecorder mediaRecorder, int what, int extra) {
@@ -862,7 +860,6 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                 }
             }
         });
-
 
         mCamera.unlock();
         mMediaRecorder.setCamera(mCamera);
@@ -892,6 +889,11 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
 
         mMediaRecorder.setOutputFile(mVideoFile.getAbsolutePath());
         mMediaRecorder.setOrientationHint(computeSensorToOutputOffset());
+
+        // TODO setMaxDuration
+        // Android documentation: Call this after setOutFormat() but before prepare()
+        mMediaRecorder.setMaxDuration(5000);
+
         // Not needed. mMediaRecorder.setPreviewDisplay(mPreview.getSurface());
     }
 
