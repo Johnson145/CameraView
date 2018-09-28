@@ -728,8 +728,8 @@ class Camera1 extends CameraController implements Camera.PreviewCallback, Camera
                 if (mSessionType == SessionType.VIDEO) {
                     mVideoFile = videoFile;
                     mIsCapturingVideo = true;
-                    initMediaRecorder();
                     try {
+                        initMediaRecorder(); // this must be included in the try-catch-block, because at least mCamera.unlock(); may fail, too
                         mMediaRecorder.prepare();
                         mMediaRecorder.start();
                     } catch (Exception e) {
