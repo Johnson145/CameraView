@@ -43,21 +43,25 @@ abstract class Mapper {
             }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         <T> T map(Flash flash) {
             return (T) FLASH.get(flash);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         <T> T map(Facing facing) {
             return (T) FACING.get(facing);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         <T> T map(WhiteBalance whiteBalance) {
             return (T) WB.get(whiteBalance);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         <T> T map(Hdr hdr) {
             return (T) HDR.get(hdr);
