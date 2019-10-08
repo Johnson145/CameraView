@@ -140,7 +140,7 @@ task javadoc(type: Javadoc) {
     classpath += project.files("${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar")
     project.android.libraryVariants.all { variant ->
         if (variant.name == 'release') {
-            classpath += files(variant.javaCompile.classpath)
+            classpath += files(variant.javaCompileProvider.get().classpath)
         }
     }
     exclude '**/BuildConfig.java'
