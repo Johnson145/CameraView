@@ -189,12 +189,12 @@ task mergedCoverageReport(type: JacocoReport) {
 
     def testData = "jacoco/testDebugUnitTest.exec"
     def androidTestData = "outputs/code-coverage/connected/*coverage.ec"
-    executionData = fileTree(dir: "$buildDir", includes: [testData, androidTestData])
+    executionData.setFrom fileTree(dir: "$buildDir", includes: [testData, androidTestData])
 
     // Sources.
-    sourceDirectories = android.sourceSets.main.java.sourceFiles
+    sourceDirectories.setFrom android.sourceSets.main.java.sourceFiles
     // Add BuildConfig and R.
-    additionalSourceDirs = files([
+    additionalSourceDirs.setFrom files([
             "$buildDir/generated/source/buildConfig/debug",
             "$buildDir/generated/source/r/debug"
     ])
@@ -203,7 +203,7 @@ task mergedCoverageReport(type: JacocoReport) {
     def debugDir = "$buildDir/intermediates/classes/debug"
     def filter = ['**/R.class', '**/R$*.class', '**/*$ViewInjector*.*',
                   '**/BuildConfig.*', '**/Manifest*.*']
-    classDirectories = fileTree(dir: debugDir, excludes: filter);
+    classDirectories.setFrom fileTree(dir: debugDir, excludes: filter);
 
     reports.xml.enabled = true
     reports.html.enabled = true
