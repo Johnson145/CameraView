@@ -7,8 +7,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.os.Handler;
-import android.support.annotation.UiThread;
-import android.support.media.ExifInterface;
+import androidx.annotation.UiThread;
+import androidx.exifinterface.media.ExifInterface;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

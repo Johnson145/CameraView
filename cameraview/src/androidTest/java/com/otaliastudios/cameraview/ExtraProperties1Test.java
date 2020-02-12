@@ -1,16 +1,13 @@
 package com.otaliastudios.cameraview;
 
 
-import android.annotation.TargetApi;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraCharacteristics;
-import android.support.test.filters.SmallTest;
-import android.support.test.runner.AndroidJUnit4;
-import android.util.SizeF;
+
+import androidx.test.filters.SmallTest;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 
 import static org.mockito.Mockito.*;
 import static org.junit.Assert.*;
